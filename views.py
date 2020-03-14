@@ -95,7 +95,6 @@ def typesetting_article(request, article_id):
     elif request.POST and "complete-typesetting" in request.POST:
         logic.complete_typesetting(request, article)
 
-
     template = 'typesetting/typesetting_article.html'
     context = {
         'article': article,
@@ -214,6 +213,12 @@ def typesetting_upload_galley(request, article_id, assignment_id=None):
                 request,
                 uploaded_file,
                 'Production Ready File',
+            )
+
+            messages.add_message(
+                request,
+                messages.SUCCESS,
+                'New production file uploaded.'
             )
 
     if assignment_id:

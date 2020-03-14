@@ -1,12 +1,14 @@
 {% load securitytags %}
 {% load hooks %}
-<div class="box">
-    <div class="title-area">
-        <h2>Files for Typesetting</h2>
-        <a href="#" class="button" data-open="prodfile">Upload File</a>
-    </div>
-    <div class="content">
-        <p>
+
+<div class="reveal small" id="files_for_typesetting" data-reveal data-animation-in="slide-in-up"
+     data-animation-out="slide-out-down">
+    <div class="card">
+        <div class="card-divider">
+            <h4><i class="fa fa-file-word-o">&nbsp;</i>Files for Typesetting</h4>
+        </div>
+        <div class="card-section">
+           <p>
             <small>Listed below are all the manuscript and copyedited files for this paper. Typesetters will also get access to all figure files uploaded by the author. If you need to manage these files use the <a targer="_blank" href="{% url 'document_management' article.pk %}">Document Management</a> page. If you need to upload a newer version use the Upload File button in the top right of this box.</small>
         </p>
         <table class="scroll small">
@@ -40,5 +42,10 @@
                 {% endfor %}
             {% endfor %}
         </table>
+        <a href="#" class="button" data-open="prodfile">Upload File</a>
+        </div>
     </div>
+    <button class="close-button" data-close aria-label="Close reveal" type="button">
+        <span aria-hidden="true">&times;</span>
+    </button>
 </div>
