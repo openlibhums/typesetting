@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied
 from plugins.typesetting import plugin_settings, models, logic, forms, security
 from security import decorators
 from submission import models as submission_models
-from core import models as core_models, files
+from core import models as core_models, files, workflow
 from production import logic as production_logic
 from journal.views import article_figure
 from utils import models as utils_models
@@ -93,7 +93,7 @@ def typesetting_article(request, article_id):
         )
 
     elif request.POST and "complete-typesetting" in request.POST:
-        logic.complete_typesetting(request, article)
+        return logic.complete_typesetting(request, article)
 
     template = 'typesetting/typesetting_article.html'
     context = {
@@ -102,6 +102,7 @@ def typesetting_article(request, article_id):
         'galleys': galleys,
         'manuscript_files': manuscript_files,
         'pending_tasks': logic.typesetting_pending_tasks(rounds[0]),
+        'next_element': logic.get_next_element('typesetting_article', request),
     }
 
     return render(request, template, context)
@@ -668,6 +669,18 @@ def typesetting_assignment(request, assignment_id):
 
     if request.POST:
 
+        if assignment.cancelled:
+            messages.add_message(
+                request,
+                messages.WARNING,
+                'The manager for this article has cancelled this typesetting'
+                'task. No further changes are allowed',
+            )
+            return redirect(reverse(
+                'typesetting_assignment',
+                kwargs={'assignment_id': assignment.pk},
+            ))
+
         if 'complete_typesetting' in request.POST:
             note = request.POST.get('note_from_typesetter', None)
             assignment.complete(note, galleys)
@@ -724,6 +737,18 @@ def typesetting_assign_proofreader(request, article_id):
     galleys = core_models.Galley.objects.filter(
         article=article,
     )
+
+    if not galleys:
+        messages.add_message(
+            request,
+            messages.WARNING,
+            'You cannot assign a proofreader without Galley Files.',
+        )
+
+        return redirect(reverse(
+            'typesetting_article',
+            kwargs={'article_id': article.pk},
+        ))
 
     form = forms.AssignProofreader(
         proofreaders=proofreaders,
