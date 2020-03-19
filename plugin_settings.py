@@ -82,17 +82,17 @@ def register_for_events():
 
     events_logic.Events.register_for_event(
         ON_PROOFREADER_ASSIGN_CANCELLED,
-        emails.send_proofreader_assign_cancelled,
+        emails.send_proofreader_assign_transaction_email,
     )
 
     events_logic.Events.register_for_event(
         ON_PROOFREADER_ASSIGN_RESET,
-        emails.send_proofreader_assign_reset,
+        emails.send_proofreader_assign_transaction_email,
     )
 
     events_logic.Events.register_for_event(
         ON_PROOFREADER_ASSIGN_COMPLETE,
-        emails.send_proofreader_assign_complete,
+        emails.send_proofreader_assign_transaction_email,
     )
 
     events_logic.Events.register_for_event(

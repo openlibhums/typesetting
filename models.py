@@ -211,55 +211,35 @@ class TypesettingAssignment(models.Model):
         return self.FRIENDLY_STATUSES.get(self.status)
 
     def send_notification(self, message, request, skip=False):
-        description = '{0} has been assigned as a typesetter for {1}'.format(
-            self.typesetter.full_name(),
-            self.round.article.title,
+        kwargs = {
+            'assignment': self,
+            'request': request,
+            'message': message,
+            'skip': skip,
+        }
+
+        events_logic.Events.raise_event(
+            plugin_settings.ON_TYPESETTING_ASSIGN_NOTIFICATION,
+            task_object=self.round.article,
+            **kwargs,
         )
 
         if not skip:
-            log_dict = {
-                'level': 'Info',
-                'action_text': description,
-                'types': 'Typesetting Assignment',
-                'target': self.round.article,
-            }
-            notify_helpers.send_email_with_body_from_user(
-                request,
-                'subject_typesetter_notification',
-                self.typesetter.email,
-                message,
-                log_dict=log_dict,
-            )
-            notify_helpers.send_slack(
-                request,
-                description,
-                ['slack_editors'],
-            )
-
             self.notified = True
             self.save()
 
     def send_decision_notification(self, request, note, decision):
-        description = 'Typesetting task {0} decision made by {1}: {2}'.format(
-            self.pk,
-            self.typesetter.full_name(),
-            decision,
-        )
-
-        log_dict = {
-            'level': 'Info',
-            'action_text': description,
-            'types': 'Typesetting Assignment Decision',
-            'target': self.round.article,
+        kwargs = {
+            'assignment': self,
+            'request': request,
+            'note': note,
+            'decision': decision,
         }
 
-        notify_helpers.send_email_with_body_from_setting_template(
-            request,
-            'typsetting_typesetter_decision_{}'.format(decision),
-            'Typesetting Assignment Decision',
-            self.manager.email,
-            context={'assignment': self, 'note': note},
-            log_dict=log_dict,
+        events_logic.Events.raise_event(
+            plugin_settings.ON_TYPESETTING_ASSIGN_DECISION,
+            task_object=self.round.article,
+            **kwargs,
         )
 
     def complete(self, note, galleys):
@@ -319,22 +299,58 @@ class GalleyProofing(models.Model):
             self.proofreader.full_name(),
         )
 
-    def cancel(self):
+    def cancel(self, request):
         self.cancelled = True
         self.completed = timezone.now()
         self.save()
 
-    def reset(self):
+        kwargs = {
+            'assignment': self,
+            'request': request,
+            'event_type': 'cancelled',
+        }
+
+        events_logic.Events.raise_event(
+            plugin_settings.ON_PROOFREADER_ASSIGN_CANCELLED,
+            task_object=self.round.article,
+            **kwargs,
+        )
+
+    def reset(self, request):
         self.cancelled = False
         self.completed = None
         self.accepted = None
         self.save()
 
-    def complete(self):
+        kwargs = {
+            'assignment': self,
+            'request': request,
+            'event_type': 'reset',
+        }
+
+        events_logic.Events.raise_event(
+            plugin_settings.ON_PROOFREADER_ASSIGN_RESET,
+            task_object=self.round.article,
+            **kwargs,
+        )
+
+    def complete(self, request):
         self.cancelled = False
         self.completed = timezone.now()
         self.accepted = timezone.now()
         self.save()
+
+        kwargs = {
+            'assignment': self,
+            'request': request,
+            'event_type': 'completed'
+        }
+
+        events_logic.Events.raise_event(
+            plugin_settings.ON_PROOFREADER_ASSIGN_COMPLETE,
+            task_object=self.round.article,
+            **kwargs,
+        )
 
     def unproofed_galleys(self, galleys):
         check = []
@@ -388,31 +404,21 @@ class GalleyProofing(models.Model):
         return self.FRIENDLY_STATUSES.get(self.status)
 
     def send_assignment_notification(self, request, message, skip=False):
-        description = '{0} has been assigned as a proofreader for {1}'.format(
-            self.proofreader.full_name(),
-            self.round.article.title,
+
+        kwargs = {
+            'assignment': self,
+            'request': request,
+            'message': message,
+            'skip': skip,
+        }
+
+        events_logic.Events.raise_event(
+            plugin_settings.ON_PROOFREADER_ASSIGN_NOTIFICATION,
+            task_object=self.round.article,
+            **kwargs,
         )
 
         if not skip:
-            log_dict = {
-                'level': 'Info',
-                'action_text': description,
-                'types': 'Proofing Assignment',
-                'target': self.round.article,
-            }
-            notify_helpers.send_email_with_body_from_user(
-                request,
-                'Proofing Request',
-                self.proofreader.email,
-                message,
-                log_dict=log_dict,
-            )
-            notify_helpers.send_slack(
-                request,
-                description,
-                ['slack_editors'],
-            )
-
             self.notified = True
             self.save()
 
