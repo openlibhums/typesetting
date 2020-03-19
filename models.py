@@ -3,8 +3,10 @@ from datetime import date, timedelta
 from django.db import models
 from django.utils import timezone
 
+from plugins.typesetting import plugin_settings
 from utils import models as utils_models
 from utils import notify_helpers
+from events import logic as events_logic
 
 
 def review_choices():
@@ -270,24 +272,15 @@ class TypesettingAssignment(models.Model):
         self.save()
 
     def send_complete_notification(self, request):
-        description = 'Typesetting task completed by {0}'.format(
-            self.typesetter.full_name(),
-        )
-
-        log_dict = {
-            'level': 'Info',
-            'action_text': description,
-            'types': 'Typesetting Complete',
-            'target': self.round.article,
+        kwargs = {
+            'assignment': self,
+            'request': request,
         }
 
-        notify_helpers.send_email_with_body_from_setting_template(
-            request,
-            'typesetting_typesetter_complete',
-            'Typesetting Assignment Complete',
-            self.manager.email,
-            context={'assignment': self},
-            log_dict=log_dict,
+        events_logic.Events.raise_event(
+            plugin_settings.ON_TYPESETTING_ASSIGN_COMPLETE,
+            task_object=self.round.article,
+            **kwargs,
         )
 
 
@@ -422,4 +415,13 @@ class GalleyProofing(models.Model):
 
             self.notified = True
             self.save()
+
+    def send_cancel_notification(self, request):
+        description = '{0} cancelled a proofreading task for {article} assigned to {proofreader}'
+
+    def send_reset_notification(self, request):
+        pass
+
+    def send_complete_notification(self, request):
+        pass
 
