@@ -1,6 +1,4 @@
 from utils import notify_helpers
-
-from plugins.typesetting import models
 from utils import models as utils_models
 
 
@@ -21,7 +19,9 @@ def send_typesetting_complete(**kwargs):
     }
 
     notify_helpers.send_email_with_body_from_setting_template(
-        request, 'typesetting_complete', 'subject_typesetting_complete',
+        request,
+        'typesetting_complete',
+        'subject_typesetting_complete',
         article.editor_emails(),
         {'article': article},
         log_dict=log_dict,
@@ -90,7 +90,7 @@ def send_proofreader_assign_transaction_email(**kwargs):
 
     notify_helpers.send_email_with_body_from_setting_template(
         request,
-        'typesetting_typesetter_complete'.format(event_type),
+        'typesetting_proofreader_{}'.format(event_type),
         'Proofreader Assignment {}'.format(event_type),
         message_target,
         context={'assignment': assignment, 'event_type': event_type},
@@ -101,6 +101,7 @@ def send_proofreader_assign_transaction_email(**kwargs):
         description,
         ['slack_editors'],
     )
+
 
 def send_typesetting_assign_notification(**kwargs):
     assignment = kwargs['assignment']

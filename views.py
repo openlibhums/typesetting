@@ -880,7 +880,7 @@ def typesetting_manage_proofing_assignment(request, article_id, assignment_id):
             action = request.POST.get('action')
 
             if action == 'cancel':
-                assignment.cancel()
+                assignment.cancel(request)
 
                 utils_models.LogEntry.add_entry(
                     types='Proofreading Assignment Cancelled',
@@ -899,7 +899,7 @@ def typesetting_manage_proofing_assignment(request, article_id, assignment_id):
                     'Proofing task cancelled.',
                 )
             elif action == 'reset':
-                assignment.reset()
+                assignment.reset(request)
 
                 utils_models.LogEntry.add_entry(
                     types='Proofreading Assignment Reset',
@@ -1003,7 +1003,7 @@ def typesetting_proofreading_assignment(request, assignment_id):
         if 'complete' in request.POST:
             unproofed_galleys = assignment.unproofed_galleys(galleys)
             if not unproofed_galleys:
-                assignment.complete()
+                assignment.complete(request)
                 messages.add_message(
                     request,
                     messages.SUCCESS,
