@@ -5,12 +5,12 @@ from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 
 from plugins.typesetting import plugin_settings, models, logic, forms, security
+from plugins.typesetting.notifications import notify
 from security import decorators
 from submission import models as submission_models
-from core import models as core_models, files, workflow
+from core import models as core_models, files
 from production import logic as production_logic
 from journal.views import article_figure
-from utils import models as utils_models
 
 
 @decorators.has_journal
@@ -397,7 +397,6 @@ def typesetting_assign_typesetter(request, article_id):
 
         if form.is_valid():
             assignment = form.save()
-
             assignment.manager = request.user
             assignment.save()
 
@@ -464,13 +463,12 @@ def typesetting_notify_typesetter(request, article_id, assignment_id):
 
     if request.POST:
         message = request.POST.get('message')
-
-        assignment.send_notification(
-            message,
+        notify.typesetting_assignment(
             request,
+            assignment,
+            message,
             skip=True if 'skip' in request.POST else False,
         )
-
         messages.add_message(
             request,
             messages.SUCCESS,
@@ -761,17 +759,6 @@ def typesetting_assign_proofreader(request, article_id):
         if form.is_valid():
             assignment = form.save()
 
-            utils_models.LogEntry.add_entry(
-                types='Proofreader Assigned',
-                description='{} assigned as a proofreader by {}'.format(
-                    assignment.proofreader.full_name(),
-                    request.user,
-                ),
-                level='Info',
-                actor=request.user,
-                target=article,
-            )
-
             messages.add_message(
                 request,
                 messages.SUCCESS,
@@ -821,12 +808,16 @@ def typesetting_notify_proofreader(request, article_id, assignment_id):
 
     if request.POST:
         message = request.POST.get('message')
-        assignment.send_assignment_notification(
-            request,
-            message,
-            skip=True if 'skip' in request.POST else False
+        skip = True if 'skip' in request.POST else False
+        assignment.assigned(
+            skip=skip
         )
-
+        notify.galley_proofing_assignment(
+            request,
+            assignment,
+            message,
+            skip=skip
+        )
         messages.add_message(
             request,
             messages.SUCCESS,
@@ -880,38 +871,22 @@ def typesetting_manage_proofing_assignment(request, article_id, assignment_id):
             action = request.POST.get('action')
 
             if action == 'cancel':
-                assignment.cancel(request)
-
-                utils_models.LogEntry.add_entry(
-                    types='Proofreading Assignment Cancelled',
-                    description='Proofing by {} cancelled by {}'.format(
-                        assignment.proofreader.full_name(),
-                        request.user,
-                    ),
-                    level='Info',
-                    actor=request.user,
-                    target=article,
+                assignment.cancel()
+                notify.galley_proofing_cancel(
+                    request,
+                    assignment,
                 )
-
                 messages.add_message(
                     request,
                     messages.SUCCESS,
                     'Proofing task cancelled.',
                 )
             elif action == 'reset':
-                assignment.reset(request)
-
-                utils_models.LogEntry.add_entry(
-                    types='Proofreading Assignment Reset',
-                    description='Proofing by {} reset by {}'.format(
-                        assignment.proofreader.full_name(),
-                        request.user,
-                    ),
-                    level='Info',
-                    actor=request.user,
-                    target=article,
+                assignment.reset()
+                notify.galley_proofing_reset(
+                    request,
+                    assignment,
                 )
-
                 messages.add_message(
                     request,
                     messages.SUCCESS,
@@ -1003,7 +978,11 @@ def typesetting_proofreading_assignment(request, assignment_id):
         if 'complete' in request.POST:
             unproofed_galleys = assignment.unproofed_galleys(galleys)
             if not unproofed_galleys:
-                assignment.complete(request)
+                assignment.complete()
+                notify.galley_proofing_complete(
+                    request,
+                    assignment
+                )
                 messages.add_message(
                     request,
                     messages.SUCCESS,

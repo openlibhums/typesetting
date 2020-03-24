@@ -192,6 +192,15 @@ class TypesettingAssignment(models.Model):
         self.cancelled = timezone.now()
         self.save()
 
+    def complete(self, note, galleys):
+        self.typesetter_note = note
+
+        for galley in galleys:
+            self.galleys_created.add(galley)
+
+        self.completed = timezone.now()
+        self.save()
+
     FRIENDLY_STATUSES = {
         "assigned": "Awaiting response from the typesetter.",
         "accepted": "Typesetter has accepted task, awaiting completion.",
@@ -210,24 +219,6 @@ class TypesettingAssignment(models.Model):
     def friendly_status(self):
         return self.FRIENDLY_STATUSES.get(self.status)
 
-    def send_notification(self, message, request, skip=False):
-        kwargs = {
-            'assignment': self,
-            'request': request,
-            'message': message,
-            'skip': skip,
-        }
-
-        events_logic.Events.raise_event(
-            plugin_settings.ON_TYPESETTING_ASSIGN_NOTIFICATION,
-            task_object=self.round.article,
-            **kwargs,
-        )
-
-        if not skip:
-            self.notified = True
-            self.save()
-
     def send_decision_notification(self, request, note, decision):
         kwargs = {
             'assignment': self,
@@ -241,15 +232,6 @@ class TypesettingAssignment(models.Model):
             task_object=self.round.article,
             **kwargs,
         )
-
-    def complete(self, note, galleys):
-        self.typesetter_note = note
-
-        for galley in galleys:
-            self.galleys_created.add(galley)
-
-        self.completed = timezone.now()
-        self.save()
 
     def send_complete_notification(self, request):
         kwargs = {
@@ -299,58 +281,27 @@ class GalleyProofing(models.Model):
             self.proofreader.full_name(),
         )
 
-    def cancel(self, request):
+    def assigned(self, skip=False):
+        if not skip:
+            self.notified = True
+            self.save()
+
+    def cancel(self):
         self.cancelled = True
         self.completed = timezone.now()
         self.save()
 
-        kwargs = {
-            'assignment': self,
-            'request': request,
-            'event_type': 'cancelled',
-        }
-
-        events_logic.Events.raise_event(
-            plugin_settings.ON_PROOFREADER_ASSIGN_CANCELLED,
-            task_object=self.round.article,
-            **kwargs,
-        )
-
-    def reset(self, request):
+    def reset(self):
         self.cancelled = False
         self.completed = None
         self.accepted = None
         self.save()
 
-        kwargs = {
-            'assignment': self,
-            'request': request,
-            'event_type': 'reset',
-        }
-
-        events_logic.Events.raise_event(
-            plugin_settings.ON_PROOFREADER_ASSIGN_RESET,
-            task_object=self.round.article,
-            **kwargs,
-        )
-
-    def complete(self, request):
+    def complete(self):
         self.cancelled = False
         self.completed = timezone.now()
         self.accepted = timezone.now()
         self.save()
-
-        kwargs = {
-            'assignment': self,
-            'request': request,
-            'event_type': 'completed'
-        }
-
-        events_logic.Events.raise_event(
-            plugin_settings.ON_PROOFREADER_ASSIGN_COMPLETE,
-            task_object=self.round.article,
-            **kwargs,
-        )
 
     def unproofed_galleys(self, galleys):
         check = []
@@ -402,32 +353,3 @@ class GalleyProofing(models.Model):
     @property
     def friendly_status(self):
         return self.FRIENDLY_STATUSES.get(self.status)
-
-    def send_assignment_notification(self, request, message, skip=False):
-
-        kwargs = {
-            'assignment': self,
-            'request': request,
-            'message': message,
-            'skip': skip,
-        }
-
-        events_logic.Events.raise_event(
-            plugin_settings.ON_PROOFREADER_ASSIGN_NOTIFICATION,
-            task_object=self.round.article,
-            **kwargs,
-        )
-
-        if not skip:
-            self.notified = True
-            self.save()
-
-    def send_cancel_notification(self, request):
-        description = '{0} cancelled a proofreading task for {article} assigned to {proofreader}'
-
-    def send_reset_notification(self, request):
-        pass
-
-    def send_complete_notification(self, request):
-        pass
-
