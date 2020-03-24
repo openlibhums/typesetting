@@ -66,7 +66,7 @@ class TypesettingRound(models.Model):
         for proofing in  self.galleyproofing_set.filter(
             completed__isnull=True,
         ):
-            proofing.cancel()
+            proofing.cancel(user=user)
 
 
 class TypesettingAssignment(models.Model):
@@ -192,7 +192,16 @@ class TypesettingAssignment(models.Model):
         self.cancelled = timezone.now()
         self.save()
 
-    def complete(self, note, galleys):
+    def complete(self, note, galleys, user):
+        utils_models.LogEntry.add_entry(
+            types="Typesetting Task Completed",
+            description="The typesetting assignment {self.pk} has been "
+                        "completed by user {user}".format(self=self, user=user),
+            level="INFO",
+            actor=user,
+            target=self.round.article,
+        )
+
         self.typesetter_note = note
 
         for galley in galleys:
@@ -218,32 +227,6 @@ class TypesettingAssignment(models.Model):
     @property
     def friendly_status(self):
         return self.FRIENDLY_STATUSES.get(self.status)
-
-    def send_decision_notification(self, request, note, decision):
-        kwargs = {
-            'assignment': self,
-            'request': request,
-            'note': note,
-            'decision': decision,
-        }
-
-        events_logic.Events.raise_event(
-            plugin_settings.ON_TYPESETTING_ASSIGN_DECISION,
-            task_object=self.round.article,
-            **kwargs,
-        )
-
-    def send_complete_notification(self, request):
-        kwargs = {
-            'assignment': self,
-            'request': request,
-        }
-
-        events_logic.Events.raise_event(
-            plugin_settings.ON_TYPESETTING_ASSIGN_COMPLETE,
-            task_object=self.round.article,
-            **kwargs,
-        )
 
 
 class GalleyProofing(models.Model):
@@ -281,27 +264,70 @@ class GalleyProofing(models.Model):
             self.proofreader.full_name(),
         )
 
-    def assigned(self, skip=False):
+    def assign(self, user, skip=False):
         if not skip:
             self.notified = True
             self.save()
 
-    def cancel(self):
+        utils_models.LogEntry.add_entry(
+            types='Proofreader Assigned',
+            description='{} assigned as a proofreader by {}'.format(
+                self.proofreader.full_name(),
+                user,
+            ),
+            level='Info',
+            actor=user,
+            target=self.round.article,
+        )
+
+    def cancel(self, user):
         self.cancelled = True
         self.completed = timezone.now()
         self.save()
 
-    def reset(self):
+        utils_models.LogEntry.add_entry(
+            types='Proofreading Assignment Cancelled',
+            description='Proofing by {} cancelled by {}'.format(
+                self.proofreader.full_name(),
+                user,
+            ),
+            level='Info',
+            actor=user,
+            target=self.round.article,
+        )
+
+    def reset(self, user):
         self.cancelled = False
         self.completed = None
         self.accepted = None
         self.save()
 
-    def complete(self):
+        utils_models.LogEntry.add_entry(
+            types='Proofreading Assignment Reset',
+            description='Proofing by {} reset by {}'.format(
+                self.proofreader.full_name(),
+                user,
+            ),
+            level='Info',
+            actor=user,
+            target=self.round.article,
+        )
+
+    def complete(self, user):
         self.cancelled = False
         self.completed = timezone.now()
         self.accepted = timezone.now()
         self.save()
+
+        utils_models.LogEntry.add_entry(
+            types='Proofreading Assignment Complete',
+            description='Proofing by {} completed'.format(
+                user,
+            ),
+            level='Info',
+            actor=user,
+            target=self.round.article,
+        )
 
     def unproofed_galleys(self, galleys):
         check = []

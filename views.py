@@ -675,8 +675,8 @@ def typesetting_assignment(request, assignment_id):
 
         if 'complete_typesetting' in request.POST:
             note = request.POST.get('note_from_typesetter', None)
-            assignment.complete(note, galleys)
-            assignment.send_complete_notification(request)
+            assignment.complete(note, galleys, request.user)
+            notify.send_complete_notification(assignment, request)
 
             return redirect(reverse('typesetting_assignments'))
 
@@ -688,7 +688,12 @@ def typesetting_assignment(request, assignment_id):
             if decision == 'accept':
                 assignment.accepted = timezone.now()
                 assignment.save()
-                assignment.send_decision_notification(request, note, decision)
+                notify.send_decision_notification(
+                    assignment,
+                    request,
+                    note,
+                    decision,
+                )
                 return redirect(reverse(
                     'typesetting_assignment',
                     kwargs={'assignment_id': assignment.pk},
@@ -696,7 +701,12 @@ def typesetting_assignment(request, assignment_id):
             else:
                 assignment.completed = timezone.now()
                 assignment.save()
-                assignment.send_decision_notification(request, note, decision)
+                notify.send_decision_notification(
+                    assignment,
+                    request,
+                    note,
+                    decision,
+                )
                 messages.add_message(
                     request,
                     messages.INFO,
@@ -809,7 +819,8 @@ def typesetting_notify_proofreader(request, article_id, assignment_id):
     if request.POST:
         message = request.POST.get('message')
         skip = True if 'skip' in request.POST else False
-        assignment.assigned(
+        assignment.assign(
+            user=request.user,
             skip=skip
         )
         notify.galley_proofing_assignment(
@@ -871,7 +882,9 @@ def typesetting_manage_proofing_assignment(request, article_id, assignment_id):
             action = request.POST.get('action')
 
             if action == 'cancel':
-                assignment.cancel()
+                assignment.cancel(
+                    user=request.user
+                )
                 notify.galley_proofing_cancel(
                     request,
                     assignment,
@@ -882,7 +895,9 @@ def typesetting_manage_proofing_assignment(request, article_id, assignment_id):
                     'Proofing task cancelled.',
                 )
             elif action == 'reset':
-                assignment.reset()
+                assignment.reset(
+                    user=request.user
+                )
                 notify.galley_proofing_reset(
                     request,
                     assignment,
@@ -978,7 +993,9 @@ def typesetting_proofreading_assignment(request, assignment_id):
         if 'complete' in request.POST:
             unproofed_galleys = assignment.unproofed_galleys(galleys)
             if not unproofed_galleys:
-                assignment.complete()
+                assignment.complete(
+                    user=request.user
+                )
                 notify.galley_proofing_complete(
                     request,
                     assignment
