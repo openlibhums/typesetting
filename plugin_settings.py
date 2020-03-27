@@ -20,6 +20,8 @@ STAGE = 'typesetting_plugin'
 ON_TYPESETTING_COMPLETE = "on_typesetting_complete"
 ON_TYPESETTING_ASSIGN_NOTIFICATION = "on_typesetting_assign_notification"
 ON_TYPESETTING_ASSIGN_DECISION = "on_typesetting_assign_decision"
+ON_TYPESETTING_ASSIGN_CANCELLED = "on_typesetting_assign_cancelled"
+ON_TYPESETTING_ASSIGN_DELETED = "on_typesetting_assign_deleted"
 ON_TYPESETTING_ASSIGN_COMPLETE = "on_typesetting_assign_complete"
 ON_PROOFREADER_ASSIGN_NOTIFICATION = "on_proofreader_assign_notification"
 ON_PROOFREADER_ASSIGN_CANCELLED = "on_proofreader_assign_cancelled"
@@ -68,6 +70,16 @@ def register_for_events():
     events_logic.Events.register_for_event(
         ON_TYPESETTING_ASSIGN_DECISION,
         emails.send_typesetting_assign_decision,
+    )
+
+    events_logic.Events.register_for_event(
+        ON_TYPESETTING_ASSIGN_CANCELLED,
+        emails.send_typesetting_assign_cancelled,
+    )
+
+    events_logic.Events.register_for_event(
+        ON_TYPESETTING_ASSIGN_DELETED,
+        emails.send_typesetting_assign_deleted,
     )
 
     events_logic.Events.register_for_event(

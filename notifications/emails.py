@@ -5,8 +5,6 @@ from utils import models as utils_models
 def send_typesetting_complete(**kwargs):
     request = kwargs['request']
     article = kwargs['article']
-    user_content_message = kwargs['user_content_message']
-    assignment = kwargs['assignment']
 
     description = 'Typesetting has been completed for article {0}.'.format(
         article.title)
@@ -168,6 +166,62 @@ def send_typesetting_assign_decision(**kwargs):
         'Typesetting Assignment Decision',
         assignment.manager.email,
         context={'assignment': assignment, 'note': note},
+        log_dict=log_dict,
+    )
+
+    notify_helpers.send_slack(request, description, ['slack_editors'])
+
+
+def send_typesetting_assign_cancelled(**kwargs):
+    assignment = kwargs['assignment']
+    request = kwargs['request']
+
+    description = 'Typesetting task {0} cancelled by {1}'.format(
+        assignment.pk,
+        request.user,
+    )
+
+    log_dict = {
+        'level': 'Info',
+        'action_text': description,
+        'types': 'Typesetting Assignment Cancelled',
+        'target': assignment.round.article,
+    }
+
+    notify_helpers.send_email_with_body_from_setting_template(
+        request,
+        'typesetting_typesetter_cancelled',
+        'Typesetting Assignment Cancelled',
+        assignment.typesetter.email,
+        context={'assignment': assignment},
+        log_dict=log_dict,
+    )
+
+    notify_helpers.send_slack(request, description, ['slack_editors'])
+
+
+def send_typesetting_assign_deleted(**kwargs):
+    assignment = kwargs['assignment']
+    request = kwargs['request']
+
+    description = 'Typesetting task {0} deleted by {1}'.format(
+        assignment.pk,
+        request.user,
+    )
+
+    log_dict = {
+        'level': 'Info',
+        'action_text': description,
+        'types': 'Typesetting Assignment Deleted',
+        'target': assignment.round.article,
+    }
+
+    notify_helpers.send_email_with_body_from_setting_template(
+        request,
+        'typesetting_typesetter_deleted',
+        'Typesetting Assignment Deleted',
+        assignment.typesetter.email,
+        context={'assignment': assignment},
         log_dict=log_dict,
     )
 

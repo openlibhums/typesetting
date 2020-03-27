@@ -78,7 +78,7 @@ def typesetting_article(request, article_id):
         )
 
     if request.POST and "new-round" in request.POST:
-        logic.new_typesetting_round(article, rounds, request.user)
+        logic.new_typesetting_round(article, rounds, request)
         messages.add_message(
             request,
             messages.INFO,
@@ -463,7 +463,7 @@ def typesetting_notify_typesetter(request, article_id, assignment_id):
 
     if request.POST:
         message = request.POST.get('message')
-        notify.typesetting_assignment(
+        notify.event_typesetting_assignment(
             request,
             assignment,
             message,
@@ -550,6 +550,10 @@ def typesetting_review_assignment(request, article_id, assignment_id):
             )
     elif request.POST and "delete" in request.POST:
         assignment.delete(request.user)
+        notify.event_typesetting_deleted(
+            assignment,
+            request,
+        )
         return redirect(
             reverse(
                 'typesetting_article',
@@ -676,7 +680,7 @@ def typesetting_assignment(request, assignment_id):
         if 'complete_typesetting' in request.POST:
             note = request.POST.get('note_from_typesetter', None)
             assignment.complete(note, galleys, request.user)
-            notify.send_complete_notification(assignment, request)
+            notify.event_complete_notification(assignment, request)
 
             return redirect(reverse('typesetting_assignments'))
 
@@ -688,7 +692,7 @@ def typesetting_assignment(request, assignment_id):
             if decision == 'accept':
                 assignment.accepted = timezone.now()
                 assignment.save()
-                notify.send_decision_notification(
+                notify.event_decision_notification(
                     assignment,
                     request,
                     note,
@@ -701,7 +705,7 @@ def typesetting_assignment(request, assignment_id):
             else:
                 assignment.completed = timezone.now()
                 assignment.save()
-                notify.send_decision_notification(
+                notify.event_decision_notification(
                     assignment,
                     request,
                     note,

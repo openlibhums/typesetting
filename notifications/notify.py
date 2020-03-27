@@ -2,7 +2,7 @@ from plugins.typesetting import plugin_settings
 from events import logic as events_logic
 
 
-def typesetting_assignment(request, assignment, message, skip):
+def event_typesetting_assignment(request, assignment, message, skip):
     kwargs = {
         'assignment': assignment,
         'request': request,
@@ -21,7 +21,7 @@ def typesetting_assignment(request, assignment, message, skip):
         assignment.save()
 
 
-def send_decision_notification(assignment, request, note, decision):
+def event_decision_notification(assignment, request, note, decision):
     kwargs = {
         'assignment': assignment,
         'request': request,
@@ -36,7 +36,33 @@ def send_decision_notification(assignment, request, note, decision):
     )
 
 
-def send_complete_notification(assignment, request):
+def event_typesetting_cancelled(assignment, request):
+    kwargs = {
+        'assignment': assignment,
+        'request': request,
+    }
+
+    events_logic.Events.raise_event(
+        plugin_settings.ON_TYPESETTING_ASSIGN_CANCELLED,
+        task_object=assignment.round.article,
+        **kwargs,
+    )
+
+
+def event_typesetting_deleted(assignment, request):
+    kwargs = {
+        'assignment': assignment,
+        'request': request,
+    }
+
+    events_logic.Events.raise_event(
+        plugin_settings.ON_TYPESETTING_ASSIGN_DELETED,
+        task_object=assignment.round.article,
+        **kwargs,
+    )
+
+
+def event_complete_notification(assignment, request):
     kwargs = {
         'assignment': assignment,
         'request': request,
