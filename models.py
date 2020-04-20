@@ -277,7 +277,7 @@ class GalleyProofing(models.Model):
             target=self.round.article,
         )
 
-    def cancel(self, user):
+    def cancel(self, user=None):
         self.cancelled = True
         self.completed = timezone.now()
         self.save()
