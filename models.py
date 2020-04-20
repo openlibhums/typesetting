@@ -156,7 +156,7 @@ class TypesettingAssignment(models.Model):
     def is_overdue(self):
         return self.due and self.due < date.today()
 
-    def reopen(self, user):
+    def reopen(self, user=None):
         self.completed = self.acccepted = None
         self.notified = False
         utils_models.LogEntry.add_entry(
@@ -261,7 +261,7 @@ class GalleyProofing(models.Model):
             self.proofreader.full_name(),
         )
 
-    def assign(self, user, skip=False):
+    def assign(self, user=None, skip=False):
         if not skip:
             self.notified = True
             self.save()
@@ -293,7 +293,7 @@ class GalleyProofing(models.Model):
             target=self.round.article,
         )
 
-    def reset(self, user):
+    def reset(self, user=None):
         self.cancelled = False
         self.completed = None
         self.accepted = None
@@ -310,7 +310,7 @@ class GalleyProofing(models.Model):
             target=self.round.article,
         )
 
-    def complete(self, user):
+    def complete(self, user=None):
         self.cancelled = False
         self.completed = timezone.now()
         self.accepted = timezone.now()
