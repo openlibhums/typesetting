@@ -192,7 +192,7 @@ class TypesettingAssignment(models.Model):
         self.cancelled = timezone.now()
         self.save()
 
-    def complete(self, note, galleys, user):
+    def complete(self, note='', user=None):
         utils_models.LogEntry.add_entry(
             types="Typesetting Task Completed",
             description="The typesetting assignment {self.pk} has been "
@@ -203,9 +203,6 @@ class TypesettingAssignment(models.Model):
         )
 
         self.typesetter_note = note
-
-        for galley in galleys:
-            self.galleys_created.add(galley)
 
         self.completed = timezone.now()
         self.save()

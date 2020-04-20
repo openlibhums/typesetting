@@ -171,11 +171,19 @@ def typesetting_upload_galley(request, article_id, assignment_id=None):
         pk=article_id,
         journal=request.journal,
     )
+    assignment = None
+
+    if assignment_id:
+        assignment = get_object_or_404(
+            models.TypesettingAssignment,
+            pk=assignment_id,
+            typesetter=request.user,
+        )
 
     try:
         if 'xml' in request.POST:
             for uploaded_file in request.FILES.getlist('xml-file'):
-                production_logic.save_galley(
+                galley = production_logic.save_galley(
                     article,
                     request,
                     uploaded_file,
@@ -189,7 +197,7 @@ def typesetting_upload_galley(request, article_id, assignment_id=None):
 
     if 'pdf' in request.POST:
         for uploaded_file in request.FILES.getlist('pdf-file'):
-            production_logic.save_galley(
+            galley = production_logic.save_galley(
                 article,
                 request,
                 uploaded_file,
@@ -199,7 +207,7 @@ def typesetting_upload_galley(request, article_id, assignment_id=None):
 
     if 'other' in request.POST:
         for uploaded_file in request.FILES.getlist('other-file'):
-            production_logic.save_galley(
+            galley = production_logic.save_galley(
                 article,
                 request,
                 uploaded_file,
@@ -216,13 +224,10 @@ def typesetting_upload_galley(request, article_id, assignment_id=None):
                 'Production Ready File',
             )
 
-    if assignment_id:
+    if assignment:
 
-        assignment = get_object_or_404(
-            models.TypesettingAssignment,
-            pk=assignment_id,
-            typesetter=request.user,
-        )
+        if galley:
+            assignment.galleys_created.add(galley)
 
         return redirect(
             reverse(
@@ -679,7 +684,7 @@ def typesetting_assignment(request, assignment_id):
 
         if 'complete_typesetting' in request.POST:
             note = request.POST.get('note_from_typesetter', None)
-            assignment.complete(note, galleys, request.user)
+            assignment.complete(note, request.user)
             notify.event_complete_notification(assignment, request)
 
             return redirect(reverse('typesetting_assignments'))
