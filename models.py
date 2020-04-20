@@ -63,7 +63,7 @@ class TypesettingRound(models.Model):
             if self.typesettingassignment.is_active:
                 self.typesettingassignment.cancel(user=user)
 
-        for proofing in  self.galleyproofing_set.filter(
+        for proofing in self.galleyproofing_set.filter(
             completed__isnull=True,
         ):
             proofing.cancel(user=user)
@@ -251,7 +251,7 @@ class GalleyProofing(models.Model):
     proofed_files = models.ManyToManyField('core.Galley', blank=True)
     notes = models.TextField(blank=True)
     annotated_files = models.ManyToManyField('core.File', blank=True)
-    
+
     class Meta:
         ordering = ('assigned', 'accepted', 'pk')
 
@@ -342,7 +342,7 @@ class GalleyProofing(models.Model):
 
         if due.days == 0:
             return 'Due Today'
-        
+
         if due < timedelta(0):
             return 'Overdue'
 
@@ -376,3 +376,69 @@ class GalleyProofing(models.Model):
     @property
     def friendly_status(self):
         return self.FRIENDLY_STATUSES.get(self.status)
+
+    def send_assignment_notification(self, request, message, skip=False):
+        description = '{0} has been assigned as a proofreader for {1}'.format(
+            self.proofreader.full_name(),
+            self.round.article.title,
+        )
+
+        if not skip:
+            log_dict = {
+                'level': 'Info',
+                'action_text': description,
+                'types': 'Proofing Assignment',
+                'target': self.round.article,
+            }
+            notify_helpers.send_email_with_body_from_user(
+                request,
+                'Proofing Request',
+                self.proofreader.email,
+                message,
+                log_dict=log_dict,
+            )
+            notify_helpers.send_slack(
+                request,
+                description,
+                ['slack_editors'],
+            )
+
+            self.notified = True
+            self.save()
+
+
+class TypesettingCorrection(models.Model):
+    task = models.ForeignKey(
+        "typesetting.TypesettingAssignment",
+        related_name="corrections",
+        blank=True,
+    )
+    galley = models.ForeignKey(
+        "core.Galley",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    date_requested = models.DateTimeField(auto_now_add=True)
+    date_completed = models.DateTimeField(blank=True, null=True)
+    date_declined = models.DateTimeField(blank=True, null=True)
+    # A copy of the file checksum to detect changes when requesting corrections
+    file_checksum = models.CharField(max_length=255, blank=True, null=True)
+
+    @property
+    def status(self):
+        _status = "pending"
+        if self.date_completed:
+            _status = "completed"
+        elif self.date_declined:
+            _status = "declined"
+        return _status
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.file_checksum:
+            self.file_checksum = self.galley.file.checksum()
+        super().save(*args, **kwargs)
+
+    @property
+    def corrected(self):
+        return self.file_checksum != self.galley.file.checksum()
