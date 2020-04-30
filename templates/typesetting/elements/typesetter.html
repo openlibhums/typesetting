@@ -16,6 +16,7 @@
             <th>Due</th>
             <th>Completed</th>
             <th>Status</th>
+            {% if not forloop.first %}<th>Review</th>{% endif %}
         </tr>
         <tr>
             <td>{{ round.typesettingassignment.pk }}</td>
@@ -25,6 +26,7 @@
             <td>{{ round.typesettingassignment.due }}</td>
             <td>{% if round.typesettingassignment.completed %}{{ round.typesettingassignment.completed }}{% else %}{{ round.typesettingassignment.completed|bool_fa }}{% endif %}</td>
             <td>{{ round.typesettingassignment.status|capfirst }}</td>
+            {% if not forloop.first %}<td><a href="{% url 'typesetting_review_assignment' round.article.pk round.typesettingassignment.pk %}">Review</a></td>{% endif %}
         </tr>
     </table>
 </div>
