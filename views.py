@@ -446,6 +446,7 @@ def typesetting_assign_typesetter(request, article_id):
 
 @decorators.has_journal
 @decorators.production_user_or_editor_required
+@security.require_not_notified(models.TypesettingAssignment)
 def typesetting_notify_typesetter(request, article_id, assignment_id):
     """
     Allows the Editor to send a notification email to the typesetter.
@@ -839,6 +840,7 @@ def typesetting_assign_proofreader(request, article_id):
 
 @decorators.has_journal
 @decorators.production_user_or_editor_required
+@security.require_not_notified(models.GalleyProofing)
 def typesetting_notify_proofreader(request, article_id, assignment_id):
     article = get_object_or_404(
         submission_models.Article,
