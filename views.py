@@ -719,6 +719,7 @@ def typesetting_typesetter_download_file(request, assignment_id, file_id):
         or file.pk in assignment.round.article.supplementary_files.values_list(
             'file__pk', flat=True,
             )
+        or file in assignment.round.article.data_figure_files.all()
     ):
         return files.serve_any_file(
             request,

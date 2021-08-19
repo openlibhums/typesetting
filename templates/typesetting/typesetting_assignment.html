@@ -31,8 +31,15 @@
                     <h2>Files to Typeset</h2>
                 </div>
                 <div class="content">
-                    <p><small>The following files have been selected for use in generating the typset articles.</small></p>
+                    <p><small>The following files have been selected for use in generating the typeset articles.</small></p>
                     {% include "typesetting/elements/typesetter/files.html" %}
+                </div>
+                <div class="title-area">
+                    <h2>Data/Figure Files</h2>
+                </div>
+                <div class="content">
+                    <p><small>All of this articles data and figure files are listed below.</small></p>
+                    {% include "typesetting/elements/typesetter/data_figure_files.html" %}
                 </div>
                 {% if article.supplementary_files.exists %}
                 <div class="title-area">

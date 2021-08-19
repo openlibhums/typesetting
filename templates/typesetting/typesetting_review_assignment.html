@@ -21,6 +21,7 @@
               <a href="{% url 'typesetting_article' article.pk %}" class="button">< Back</a>
           </div>
           <div class="content">
+              {% include "admin/elements/forms/errors.html" %}
               <table class="table small">
                   <tr>
                       <th>ID</th>
@@ -82,7 +83,7 @@
                         {{ form.due|foundation }}
                     </div>
                     <div class="content">
-                        {{ form.assignment|foundation }}
+                        {{ form.task|foundation }}
                     </div>
                   <button class="button success" name="edit">Save Changes</button>
                   <button class="button alert" name="delete" onclick="return confirm('Are you sure you want to delete this assignment?');">Delete Assignment</button>
