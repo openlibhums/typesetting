@@ -92,9 +92,9 @@ class TypesettingAssignment(models.Model):
     completed = models.DateTimeField(blank=True, null=True)
     cancelled = models.DateTimeField(blank=True, null=True)
     reviewed = models.BooleanField(default=False)
-    display_proof_comments= models.BooleanField(
+    display_proof_comments = models.BooleanField(
         default=True,
-        help_text="Allow the typesetter to see the poofreading comments",
+        help_text="Allow the typesetter to see the proofreading comments",
     )
     review_decision = models.CharField(
         choices=review_choices(),
