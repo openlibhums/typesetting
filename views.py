@@ -1293,7 +1293,7 @@ def typesetting_preview_galley(
     :param assignment_id: Optional proofing or typesetting assignment id
     :return: HttpResponse
     """
-    proofing_task = None
+    proofing_task, tables_in_galley = None, None
     article = get_object_or_404(
         submission_models.Article,
         pk=article_id,
@@ -1319,6 +1319,7 @@ def typesetting_preview_galley(
             )
 
     if galley.type == 'xml' or galley.type == 'html':
+        tables_in_galley = journal_logic.get_all_tables_from_html(galley.file_content())
         template = 'journal/article.html'
     elif galley.type == 'epub':
         template = 'proofing/preview/epub.html'
@@ -1332,6 +1333,7 @@ def typesetting_preview_galley(
         'identifier_type': 'id',
         'identifier': article.pk if article else proofing_task.round.article.pk,
         'article_content': galley.file_content(),
+        'tables_in_galley': tables_in_galley,
     }
 
     return render(request, template, context)
