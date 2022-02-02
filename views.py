@@ -449,7 +449,7 @@ def typesetting_assign_typesetter(request, article_id):
     galleys = article.galley_set.all()
 
     typesetters = logic.get_typesetters(request.journal)
-    files = logic.production_ready_files(article, file_objects=True)
+    files = logic.files_for_assignment(article)
     rounds = models.TypesettingRound.objects.filter(article=article)
     current_round = rounds[0]
     if rounds.count() > 1:
@@ -507,6 +507,7 @@ def typesetting_assign_typesetter(request, article_id):
         'form': form,
         'round': current_round,
         'proofing_assignments': proofing_assignments,
+        'proofing_files': logic.proofing_files(article),
     }
 
     return render(request, template, context)
@@ -1305,6 +1306,7 @@ def typesetting_preview_galley(
         pk=galley_id,
         article_id=article.pk,
     )
+
 
     if assignment_id:
         try:

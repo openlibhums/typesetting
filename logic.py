@@ -48,6 +48,21 @@ def production_ready_files(article, file_objects=False):
         }
 
 
+def files_for_assignment(article):
+    proofing_assignments = models.GalleyProofing.objects.filter(
+        round__article__pk=article.pk,
+    )
+    proofing_files_objs = []
+
+    for assignment in proofing_assignments:
+
+        proofing_files_objs.extend(
+            [proofing_file.pk for proofing_file in assignment.annotated_files.all()]
+        )
+
+    return proofing_files_objs
+
+
 def get_typesetters(journal):
     typesetter_pks = [
         role.user.pk for role in core_models.AccountRole.objects.filter(
