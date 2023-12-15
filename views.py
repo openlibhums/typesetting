@@ -721,6 +721,7 @@ def typesetting_assignments(request):
 
     active_assignments = assignments.filter(
         completed__isnull=True,
+        cancelled__isnull=True,
     )
 
     completed_assignments = assignments.filter(
