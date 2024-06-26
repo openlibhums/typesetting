@@ -1,7 +1,7 @@
 # Written on Jun 12 2024
 
 from django.db import migrations
-from utils import migration_utils
+from django.utils import translation
 
 
 EMAILS_WITH_RAW_ARTICLE_TITLES = [
@@ -40,10 +40,39 @@ EMAILS_WITH_RAW_ARTICLE_TITLES = [
 ]
 
 
+def update_default_setting_values(apps, setting_name, group_name, values_to_replace, replacement_value):
+    """
+    Updates the specified default setting value where it has not been edited.
+    Accounts for translatable settings that use django-modeltranslation.
+    """
+    with translation.override('en'):
+        SettingValue = apps.get_model('core', 'SettingValue')
+        setting_value = SettingValue.objects.filter(
+            setting__name=setting_name,
+            setting__group__name=group_name,
+            journal=None,
+        ).first()
+
+        if setting_value:
+            language_var = "value_{}".format('en')
+            setattr(setting_value, language_var, replacement_value)
+            setting_value.save()
+
+            variants_to_delete = SettingValue.objects.filter(
+                setting__name=setting_name,
+                setting__group__name=group_name,
+                journal__isnull=False,
+            )
+
+            for variant in variants_to_delete:
+                if getattr(variant, language_var) in values_to_replace:
+                    variant.delete()
+
+
 def use_safe_article_title_in_setting_values(apps, schema_editor):
     for setting_name, old_value in EMAILS_WITH_RAW_ARTICLE_TITLES:
         new_value = old_value.replace('article.title', 'article.safe_title')
-        migration_utils.update_default_setting_values(
+        update_default_setting_values(
             apps,
             setting_name,
             'email',
