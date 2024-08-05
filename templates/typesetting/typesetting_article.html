@@ -1,4 +1,5 @@
 {% extends "admin/core/base.html" %}
+{% load static %}
 
 {% block title %}Typesetting Article #{{ article.pk }}{% endblock %}
 {% block title-sub %}
@@ -99,4 +100,7 @@
 
 {% endblock body %}
 
-
+{% block js %}
+  <script src="{% static "admin/js/csrf.js" %}"></script>
+  {% include "admin/elements/notes/note_script.html" %}
+{% endblock %}
